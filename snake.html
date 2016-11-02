@@ -109,7 +109,7 @@
                     }
                 }
 
-                //产生10个初始食物
+                //产生初始食物
                 for (var i = 0; i < 1; i++) {
                     x = Math.floor(Math.random() * this.colCount);  // 横坐标
                     y = Math.floor(Math.random() * this.rowCount);  // 纵坐标
@@ -241,9 +241,13 @@
                     points++;
                     pointsDiv.points++;
                     pointsDiv.showPoints();
-                    if (pointsDiv.points == 5 || pointsDiv.points == 10 || pointsDiv.points == 15) {
+                    if (pointsDiv.points == 2 || pointsDiv.points == 5 || pointsDiv.points == 8) {
+                        console.log('suc');
                         this.addSpeed();
+                        clearInterval(Snake.timer);
+                        this.move();
                     }
+                    console.log('当前速度:',this.speed);
                     return;
                 }
                 var pos = this.getNextPos();
@@ -320,6 +324,7 @@
             // 加速
             addSpeed: function () {
                 this.speed -= 50;
+                console.log("加速后:",this.speed);
             },
 
             // 暂停游戏

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>贪吃蛇</title>
+    <style>
+        body {
+            font-size: 9pt;
+        }
+
+        table {
+            border-collapse: collapse;
+            border: solid #333 1px;
+            margin: 100px auto 50px auto;
+        }
+
+        td {
+            height: 10px;
+            width: 10px;
+            font-size: 0px;
+        }
+
+        #pointsDiv {
+            margin: 0 auto;
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        #btn_box {
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        button {
+            width: 70px;
+            height: 40px;
+            color: #fff;
+            border: none;
+            text-align: center;
+            line-height: 40px;
+        }
+
+        #start {
+            background: green;
+        }
+
+        #pause {
+            margin-left: 15px;
+            background: red;
+        }
+
+        #restart {
+            margin-left: 15px;
+            background: orangered;
+        }
+
+    </style>
+</head>
+<body>
+<table id="container"></table>
+<div id="pointsDiv">
+    <sapn>当前得分为</sapn>
+    <span id="points"></span>
+</div>
+<div id="btn_box">
+    <button id="start">Start</button>
+    <button id="pause">Pause</button>
+    <button id="restart">Restart</button>
+</div>
+
+<script>
+    function $(id) {
+        return document.getElementById(id)
+    }
+    window.onload = function () {
+        var pointsDiv = {
+            points: 0,
+            showPoints: function () {
+                $('points').innerHTML = pointsDiv.points;
+            }
+        };
+        var Snake = {
+            container: null, // 蛇运动的空间
+            body: [],        // 蛇身
+            direction: 0,    // 运动方向 0,1,2,3分别表示上右下左
+            timer: null,     // 定时器
+            speed: 250,      // 速度
+            paused: true,    // 是否暂停状态
+            rowCount: 30,    // 行数
+            colCount: 30,    // 列数
+            // 初始化
+            init: function () {
+                var colors = ['red', 'black', 'orange'];
+                this.container = $('container');
+                var x = 0;
+                var y = 0;
+                var colorIndex = 0;
+                this.direction = Math.floor(Math.random() * 4); // 初始运动方向
+
+                //显示分数
+
+                pointsDiv.showPoints();
+
+                // 构建container
+                for (var i = 0; i < this.rowCount; i++) {
+                    var tr = this.container.insertRow(-1);
+                    for (var j = 0; j < this.colCount; j++) {
+                        var td = tr.insertCell(-1);
+                    }
+                }
+
+                //产生10个初始食物
+                for (var i = 0; i < 1; i++) {
+                    x = Math.floor(Math.random() * this.colCount);  // 横坐标
+                    y = Math.floor(Math.random() * this.rowCount);  // 纵坐标
+                    colorIndex = Math.floor(Math.random() * 3);
+                    if (!this.isCellFilled(x, y)) {
+                        this.container.rows[y].cells[x].style.background = colors[colorIndex]
+                    }
+                }
+
+                // 产生蛇头
+                while (true) {
+                    x = Math.floor(Math.random() * this.colCount);  // 蛇头横坐标
+                    y = Math.floor(Math.random() * this.rowCount);  // 蛇头纵坐标
+                    if (!this.isCellFilled(x, y)) {
+                        this.container.rows[y].cells[x].style.background = "green";
+                        this.body.push({x: x, y: y, color: 'green'});
+                        break;
+                    }
+                }
+
+                this.paused = true;
+                document.onkeydown = function (e) {
+                    var evt = e || window.event;
+                    switch (e.keyCode) {
+                        case 13 :
+                        {
+                            if (Snake.paused) {
+                                Snake.move();
+                                Snake.paused = false;
+                            }
+                            else {
+                                Snake.pause();
+                                Snake.paused = true;
+                            }
+                            break;
+                        }
+                        case 37 :  // 按下←
+                        {
+                            if (Snake.direction == 1) {
+                                break;  // 判断当前方向如果是向右 则无变化
+                            }
+                            Snake.direction = 3;
+                            break;
+                        }
+                        case 38 :  // 按下↑
+                        {
+                            if (Snake.direction == 2) {
+                                break;  // 判断当前方向如果为向下 则无变化
+                            }
+                            Snake.direction = 0;
+                            break;
+                        }
+                        case 39:  // 按下→
+                        {
+                            if (Snake.direction == 3) {
+                                break;  // 判断当前方向如果为向左 则无变化
+                            }
+                            Snake.direction = 1;
+                            break;
+                        }
+                        case 40 :  // 按下↓
+                        {
+                            if (Snake.direction == 0) {
+                                break;  // 判断当前方向如果为向上 则无变化
+                            }
+                            Snake.direction = 2;
+                            break;
+                        }
+                    }
+
+                }
+            },
+
+            // 判断坐标点是否被填充
+            isCellFilled: function (x, y) {
+                if (this.container.rows[y].cells[x].style.background == "") {
+                    return false;
+                }
+                return true
+            },
+
+            // 移动
+            move: function () {
+                this.timer = setInterval(function () {
+                    Snake.erase();
+                    Snake.moveOneStep();
+                    Snake.draw();
+                }, this.speed)
+            },
+
+            // 清除蛇身
+            erase: function () {
+                for (var i = 0; i < this.body.length; i++) {
+                    this.eraseDot(this.body[i].x, this.body[i].y);
+                }
+            },
+
+            // 清除蛇身一节
+            eraseDot: function (x, y) {
+                this.container.rows[y].cells[x].style.background = ""
+            },
+
+            // 绘制蛇身
+            draw: function () {
+                for (var i = 0; i < this.body.length; i++) {
+                    this.drawDot(this.body[i].x, this.body[i].y, this.body[i].color)
+                }
+            },
+
+            // 绘制蛇身一节
+            drawDot: function (x, y, color) {
+                this.container.rows[y].cells[x].style.background = color;
+            },
+
+            // 移动蛇身一节
+            moveOneStep: function () {
+                if (this.collisionCheck() == -1) {
+                    clearInterval(this.timer);
+                    alert("GAME OVER !!!");
+                    return;
+                }
+                if (this.collisionCheck() == 1) {
+                    var _pos = this.getNextPos();
+                    var _x = _pos.x;
+                    var _y = _pos.y;
+                    var _color = this.getColor(_x, _y);
+                    this.body.unshift({x: _x, y: _y, color: _color});
+                    this.randomFood();
+                    points++;
+                    pointsDiv.points++;
+                    pointsDiv.showPoints();
+                    if (pointsDiv.points == 5 || pointsDiv.points == 10 || pointsDiv.points == 15) {
+                        this.addSpeed();
+                    }
+                    return;
+                }
+                var pos = this.getNextPos();
+                var color = this.body[0].color; // 保留蛇头颜色
+                // 颜色向前移动
+                for (var i = 0; i < this.body.length - 1; i++) {
+                    this.body[i].color = this.body[i + 1].color;
+                }
+                // 蛇移动
+                this.body.pop();  // 蛇尾减
+                this.body.unshift({x: pos.x, y: pos.y, color: color});  // 蛇头加
+            },
+
+            // 碰撞检测
+            collisionCheck: function () {
+                var pos = this.getNextPos();
+                var x = pos.x;
+                var y = pos.y;
+                // 边界碰撞检测
+                if (x < 0 || x >= this.colCount || y < 0 || y >= this.rowCount) {
+                    return -1;  // 碰撞边界
+                }
+                // 自身碰撞检测
+                for (var i = 0; i < this.body.length; i++) {
+                    if (this.body[i].x == x && this.body[i].y == y) {
+                        return -1;  // 碰到自己的身体,游戏结束
+                    }
+                }
+                // 食物检测
+                if (this.isCellFilled(x, y)) {
+                    return 1;  // 有东西
+                }
+
+                return 0;  // 什么也没有
+
+            },
+
+            // 计算下一步位置
+            getNextPos: function () {
+                var x = this.body[0].x;
+                var y = this.body[0].y;
+                // 向上运动时
+                if (this.direction == 0) {
+                    y--;
+                }
+                if (this.direction == 1) {
+                    x++;
+                }
+                if (this.direction == 2) {
+                    y++;
+                }
+                if (this.direction == 3) {
+                    x--;
+                }
+                return {x: x, y: y};  // 返回将要到达的坐标
+            },
+
+            // 得到一个坐标上的颜色
+            getColor: function (x, y) {
+                return this.container.rows[y].cells[x].style.background;
+            },
+
+            // 动态生成食物
+            randomFood: function () {
+                var colors = ['red', 'black', 'orange'];
+                var colorsIndex = Math.floor(Math.random() * 3);
+                var x = Math.floor(Math.random() * this.colCount);
+                var y = Math.floor(Math.random() * this.rowCount);
+                if (!this.isCellFilled(x, y)) {
+                    this.container.rows[y].cells[x].style.background = colors[colorsIndex];
+                }
+            },
+
+            // 加速
+            addSpeed: function () {
+                this.speed -= 50;
+            },
+
+            // 暂停游戏
+            pause: function () {
+                clearInterval(Snake.timer);
+                this.draw();
+            },
+
+            // 重新开始
+            restart: function () {
+                if (this.timer) {
+                    clearInterval(this.timer);
+                }
+                for (var i = 0; i < this.rowCount; i++) {
+                    this.container.deleteRow(0);
+                }
+                this.body = [];
+                this.init();
+                this.speed = 250;
+                pointsDiv.points = 0;
+                pointsDiv.showPoints();
+            }
+
+        };
+        Snake.init();
+        $('start').onclick = function () {
+            if (Snake.paused) {
+                Snake.move();
+                Snake.paused = false;
+            }
+        };
+        $('pause').onclick = function () {
+            if (!Snake.paused) {
+                Snake.pause();
+                Snake.paused = true;
+            }
+        };
+        $("restart").onclick = function () {
+            Snake.restart();
+            this.blur();
+        };
+    }
+</script>
+</body>
+</html>

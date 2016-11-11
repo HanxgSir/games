@@ -133,7 +133,7 @@
                 this.paused = true;
                 document.onkeydown = function (e) {
                     var evt = e || window.event;
-                    switch (e.keyCode) {
+                    switch (evt.keyCode) {
                         case 13 :
                         {
                             if (Snake.paused) {
